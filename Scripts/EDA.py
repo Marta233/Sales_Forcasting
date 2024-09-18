@@ -13,10 +13,9 @@ class BASICEDA:
         self.df_store = df_store
     def check_distribution_train_test_data(self):
         logging.info("Checking the distribution of promotions in the training and test datasets...")
-        
         # Calculate the distribution of promotions
         train_promo_counts = self.df_train['Promo'].value_counts(normalize=True)
-        test_promo_counts = self.df_test['Promo'].value_counts(normalize=True)
+        test_promo_counts = self.df_test['Promo'].value_counts(normalize=True) 
 
         # Combine counts into a DataFrame for easier plotting
         distribution_df = pd.DataFrame({
@@ -32,19 +31,12 @@ class BASICEDA:
         plt.xticks(rotation=0)
         plt.legend(title='Dataset')
         plt.show()
-
-        # Chi-squared test
-        contingency_table = pd.concat([train_promo_counts, test_promo_counts], axis=1).fillna(0)
-        chi2, p, _, _ = chi2_contingency(contingency_table)
-
-        logging.info(f'Chi-squared test p-value: {p}')
-
     def merge_store_data(self):
         logging.info("Merging training data with store data...")
         self.df_train = self.df_train.merge(self.df_store, on='Store', how='left')
         logging.info("Merging completed. New training data shape: {}".format(self.df_train.shape))
+        return self.df_train
     
     def df_basic_info(self):
-        self.merge_store_data()
         logging.info("Describing the training data...")
         print(self.df_train.describe())
