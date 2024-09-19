@@ -12,6 +12,7 @@ class BASICEDA:
         self.df_test = df_test
         self.df_store = df_store
         self.holidays = None  # Initialize holidays as an instance variable
+        self.school_holidays = None  # Initialize school_holidays as an instance variable
 
     def check_distribution_train_test_data(self):
         logging.info("Checking the distribution of promotions in the training and test datasets...")
@@ -43,7 +44,7 @@ class BASICEDA:
 
     def df_basic_info(self):
         logging.info("Describing the training data...")
-        print(round(self.df_train.describe().T,2))
+        return round(self.df_train.describe().T,2)
 
     def missing_percentage(self):
         # Calculate the percentage of missing values
@@ -103,16 +104,17 @@ class BASICEDA:
         self.holidays = df[df['IsStateHoliday']]['Date'].dt.date.unique()
         
         # Extract unique dates for school holidays
-        school_holidays = df[df['IsSchoolHoliday']]['Date'].dt.date.unique()
+        self.school_holidays = df[df['IsSchoolHoliday']]['Date'].dt.date.unique()
 
         # Apply the categorization function
-        df['Category'] = df.apply(lambda row: self.categorize_sales(row, school_holidays), axis=1)
+        df['Category'] = df.apply(lambda row: self.categorize_sales(row), axis=1)
         
         sales_summary = self.calculate_sales_metrics(df)
         self.visualize_total_sales(sales_summary)
         self.visualize_average_sales(sales_summary)
+        return sales_summary
 
-    def categorize_sales(self, row, school_holidays):
+    def categorize_sales(self, row):
         if row['IsStateHoliday']:
             return 'During State Holiday'
         elif row['IsSchoolHoliday']:
@@ -121,9 +123,9 @@ class BASICEDA:
             return 'Before State Holiday'
         elif (row['Date'] + pd.DateOffset(days=1)).date() in self.holidays:
             return 'After State Holiday'
-        elif (row['Date'] - pd.DateOffset(days=1)).date() in school_holidays:
+        elif (row['Date'] - pd.DateOffset(days=1)).date() in self.school_holidays:
             return 'Before School Holiday'
-        elif (row['Date'] + pd.DateOffset(days=1)).date() in school_holidays:
+        elif (row['Date'] + pd.DateOffset(days=1)).date() in self.school_holidays:
             return 'After School Holiday'
         return 'Regular Day'
 
@@ -142,7 +144,7 @@ class BASICEDA:
         plt.title('Total Sales by Category')
         plt.ylabel('Total Sales')
         plt.xlabel('Category')
-        plt.xticks(rotation=45)
+        plt.xticks(rotation=45, ha='right')
         plt.tight_layout()
         plt.show()
 
@@ -152,6 +154,32 @@ class BASICEDA:
         plt.title('Average Sales by Category')
         plt.ylabel('Average Sales')
         plt.xlabel('Category')
-        plt.xticks(rotation=45)
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+        plt.show()
+    def seasonal_purchase_treand_ana(self):
+        logging.info("Analyzing seasonal purchase trends...")
+        df = self.df_train.copy()
+        df['Date'] = pd.to_datetime(df['Date'])
+        df['Month'] = df['Date'].dt.month
+        seasonal_summary = self.calculate_seasonal_sales_metrics(df)
+        self.visualize_seasonal_sales(seasonal_summary)
+        return seasonal_summary
+
+    def calculate_seasonal_sales_metrics(self, data):
+        return data.groupby('Month').agg(
+            Total_Sales=('Sales', 'sum'),
+            Average_Sales=('Sales', 'mean'),
+            Total_Customers=('Customers', 'sum'),
+            Average_Customers=('Customers', 'mean')
+        ).reset_index()
+
+    def visualize_seasonal_sales(self, seasonal_summary):
+        plt.figure(figsize=(10, 6))
+        sns.lineplot(x='Month', y='Total_Sales', data=seasonal_summary)
+        plt.title('Total Sales by Month')
+        plt.ylabel('Total Sales')
+        plt.xlabel('Month')
+        plt.xticks(range(1, 13), ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
         plt.tight_layout()
         plt.show()
