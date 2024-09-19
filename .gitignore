@@ -1,2 +1,5 @@
-data 
-myenv          
+# Ignore everything in the Data directory
+Data/*
+# Allow .dvc files
+.dvc
+myenv
