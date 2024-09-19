@@ -1,0 +1,4 @@
+[core]
+    remote = localstorage
+['remote "localstorage"']
+    url = D:/10 A KAI 2/Week 4/LocalStorage
