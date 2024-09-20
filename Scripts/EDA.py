@@ -348,55 +348,74 @@ class BASICEDA:
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
-    def analyze_weekday_open_stores(self, top_n=5):
-        # Use self.df_train directly
+
+    def analyze_weekday_weekend_sales(self):
         data = self.df_train.copy()
+        """
+        Analyzes which stores are open on weekends and weekdays, and compares their sales.
+        Produces a plot to visualize the results.
         
-        # Debug: Print the columns and first few rows
-        print("Columns:", data.columns)
-        print("Data Preview:\n", data.head())
-        
+        Parameters:
+        - data: DataFrame containing store data with 'DayOfWeek' and 'Open' columns.
+
+        Returns:
+        - Tuple of (stores open on both weekdays and weekends, stores closed on weekdays but open on weekends)
+        """
         # Filter stores that are open on weekends (Saturday and Sunday)
-        weekend_stores = data[data['DayOfWeek'] >= 6]  # 6=Saturday, 7=Sunday
-        
-        # Identify which of these stores are open on weekdays
+        weekend_stores = data[(data['DayOfWeek'] >= 6) & (data['Open'] == 1)]
+        weekend_open_stores = weekend_stores['Store'].unique()
+
+        # Filter stores that are open on all weekdays (Monday to Friday)
         weekday_stores = data[(data['DayOfWeek'] >= 1) & (data['DayOfWeek'] <= 5) & (data['Open'] == 1)]
+        weekday_open_stores = weekday_stores['Store'].unique()
+
+        # Filter stores that are closed on weekdays
+        weekday_stores_closed = data[(data['DayOfWeek'] >= 1) & (data['DayOfWeek'] <= 5) & (data['Open'] == 0)]
+        weekday_closed_stores = weekday_stores_closed['Store'].unique()
+
+        # Identify which weekend stores are also open on weekdays
+        weekend_sales_open = weekend_stores[weekend_stores['Store'].isin(weekday_open_stores)]
+
+        # Identify which weekend stores are closed on weekdays
+        weekend_sales_closed = weekend_stores[weekend_stores['Store'].isin(weekday_closed_stores)]
+
+        # Plot the results
+        store_counts = {
+            'Stores Open on Weekdays and Weekends': len(weekend_sales_open['Store'].unique()),
+            'Stores Closed on Weekdays but Open on Weekends': len(weekend_sales_closed['Store'].unique())
+        }
         
-        # Check if the stores open on weekends are also open on weekdays
-        weekday_counts = weekday_stores.groupby('Store')['DayOfWeek'].nunique()
-        
-        # Identify stores that are open on weekdays
-        open_weekday_stores = weekday_counts[weekday_counts == 5].index
-        closed_weekday_stores = weekday_counts[weekday_counts < 5].index
-        
-        # Filter the weekend sales data for both groups
-        weekend_sales_open = weekend_stores[weekend_stores['Store'].isin(open_weekday_stores)]
-        weekend_sales_closed = weekend_stores[weekend_stores['Store'].isin(closed_weekday_stores)]
-        
-        # Aggregate sales
-        sales_summary = pd.DataFrame({
-            'Open_Weekday_Stores': weekend_sales_open.groupby('Date')['Sales'].sum(),
-            'Closed_Weekday_Stores': weekend_sales_closed.groupby('Date')['Sales'].sum()
-        }).reset_index()
-        
-        # Create the plot
-        plt.figure(figsize=(16, 8))  # Increase figure size for better visibility
-        sns.lineplot(data=sales_summary, x='Date', y='Open_Weekday_Stores', label='Open Weekday Stores', marker='o')
-        sns.lineplot(data=sales_summary, x='Date', y='Closed_Weekday_Stores', label='Closed Weekday Stores', marker='o', color='orange')
-        
-        plt.title('Weekend Sales: Open vs Closed Weekday Stores')
-        plt.xlabel('Date')
-        plt.ylabel('Total Sales')
-        
-        # Format the x-axis for monthly ticks
-        plt.xticks(rotation=45)
-        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%b %Y'))  # Format: Month Year
-        plt.gca().xaxis.set_major_locator(mdates.MonthLocator())  # Show one tick per month
-        
-        plt.legend()
-        plt.grid()
-        plt.tight_layout()
+        plt.figure(figsize=(10, 6))
+        sns.barplot(x=list(store_counts.keys()), y=list(store_counts.values()), palette="coolwarm")
+        plt.title('Comparison of Stores Open on Weekdays vs Weekends')
+        plt.ylabel('Number of Stores')
+        plt.xlabel('Store Type')
         plt.show()
+         # Create a combined DataFrame for sales plotting
+        sales_data = pd.DataFrame({
+            'DayOfWeek': sales_open.index,
+            'Sales Open': sales_open.values,
+            'Sales Closed': sales_closed.values
+        }).fillna(0)  # Fill NaN values for days where stores may not be open
+
+        # Plot the sales comparison
+        plt.figure(figsize=(12, 10))
+        sns.lineplot(data=sales_data, x='DayOfWeek', y='Sales Open', label='Stores Open Weekdays & Weekends', marker='o')
+        sns.lineplot(data=sales_data, x='DayOfWeek', y='Sales Closed', label='Stores Closed Weekdays but Open Weekends', marker='o')
+        
+        plt.title('Sales Comparison Between Store Types Across the Week')
+        plt.xlabel('Day of the Week')
+        plt.ylabel('Total Sales')
+        plt.xticks([1, 2, 3, 4, 5, 6, 7], ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+    
+        return weekend_sales_open['Store'].unique(), weekend_sales_closed['Store'].unique()
+       
+
+
     def analyze_assortment_type_effect(self):
         # Use self.df_train directly
         data = self.df_train.copy()
@@ -424,5 +443,52 @@ class BASICEDA:
         plt.show()
    
     # def line_plot_compiteterdistance_sales(self):
+    def analyze_competition_impact(self):
+        # Calculate correlation between competition distance and sales
+        df = self.df_train.copy()
+        correlation = df['Sales'].corr(df['CompetitionDistance'])
+        print(f"Correlation between Sales and Competition Distance: {correlation:.2f}")
+        
+        # Plotting Sales vs. Competition Distance
+        plt.figure(figsize=(8, 5))
+        plt.scatter(df['CompetitionDistance'], df['Sales'], color='blue')
+        plt.title('Sales vs. Competition Distance')
+        plt.xlabel('Competition Distance (m)')
+        plt.ylabel('Sales')
+        plt.grid()
+        plt.show()
+
+
+    def analyze_competitor_effects(self):
+        df = self.df_train.copy()
+        # Step 1: Identify stores with NA competitor distance
+        initial_na_competitors = df[df['CompetitionDistance'].isna()]
+        
+        # Step 2: Identify stores that later have valid competitor distance
+        stores_with_na = initial_na_competitors['Store'].unique()
+        stores_with_competitor_distance = df[df['Store'].isin(stores_with_na) & df['CompetitionDistance'].notna()]
+
+        # Step 3: Find the relevant sales data for these stores
+        combined_data = pd.merge(initial_na_competitors, stores_with_competitor_distance, on=['Store', 'Date'], suffixes=('_initial', '_after'))
+        
+        # Step 4: Prepare data for plotting
+        sales_comparison = combined_data[['Store', 'Sales_initial', 'Sales_after', 'CompetitionDistance_after']]
+        
+        # Step 5: Plotting the sales comparison
+        plt.figure(figsize=(12, 6))
+        
+        # Create a bar plot for sales comparison
+        sales_comparison.set_index('Store')[['Sales_initial', 'Sales_after']].plot(kind='bar', color=['blue', 'orange'])
+        
+        plt.title('Sales Comparison Before and After Competitor Distance Recorded')
+        plt.xlabel('Store')
+        plt.ylabel('Sales')
+        plt.xticks(rotation=45)
+        plt.legend(['Sales Before Competitor Distance', 'Sales After Competitor Distance'])
+        plt.grid(axis='y')
+        plt.tight_layout()
+        plt.show()
+
+        return sales_comparison
 
 
