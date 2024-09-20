@@ -2,10 +2,12 @@ import pandas as pd
 import logging
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+import seaborn as sns
+from scipy import stats
+import matplotlib.dates as mdates
+# import statsmodels.api as sm
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 class BASICEDA:
     def __init__(self, df_train, df_test, df_store):
         self.df_train = df_train
@@ -196,11 +198,19 @@ class BASICEDA:
         # Compute the correlation matrix
         corr_matrix = df.corr()
         
-        plt.figure(figsize=(12, 10))
+        plt.figure(figsize=(8, 6))
         sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", vmin=-1, vmax=1)
         plt.title('Correlation Matrix')
         plt.tight_layout()
         plt.show()
+        plt.figure(figsize=(8,6))
+        sns.lineplot(x='Customers', y='Sales', data=df)
+        plt.title('Customer Sales Relationship')
+        plt.xlabel('Customers')
+        plt.ylabel('Sales')
+        plt.tight_layout()
+        plt.show()
+    
     def analyze_promotions(self):
     # Check if the necessary columns exist
         df = self.df_train.copy()
@@ -220,7 +230,7 @@ class BASICEDA:
         print(promo_customers)
 
         # Visualization of average sales
-        plt.figure(figsize=(12, 6))
+        plt.figure(figsize=(8, 6))
         sns.barplot(x='Promo', y='Sales', data=promo_sales)
         plt.title('Average Sales by Promotion Status')
         plt.ylabel('Average Sales')
@@ -229,15 +239,26 @@ class BASICEDA:
         plt.show()
 
         # Visualization of average customers
-        plt.figure(figsize=(12, 6))
+        plt.figure(figsize=(8, 6))
         sns.barplot(x='Promo', y='Customers', data=promo_customers)
         plt.title('Average Customers by Promotion Status')
         plt.ylabel('Average Customers')
         plt.xlabel('Promotion Active (0 = No, 1 = Yes)')
         plt.xticks(rotation=0)
         plt.show()
+            # T-test for sales during promotions vs. non-promotions
+        sales_with_promo = df[df['Promo'] == 1]['Sales']
+        sales_without_promo = df[df['Promo'] == 0]['Sales']
+        t_stat, p_value = stats.ttest_ind(sales_with_promo, sales_without_promo)
+        print(f'T-test for Sales: t-statistic = {t_stat}, p-value = {p_value}')
 
-    
+        # T-test for customer counts during promotions vs. non-promotions
+        customers_with_promo = df[df['Promo'] == 1]['Customers']
+        customers_without_promo = df[df['Promo'] == 0]['Customers']
+        t_stat_customers, p_value_customers = stats.ttest_ind(customers_with_promo, customers_without_promo)
+        print(f'T-test for Customers: t-statistic = {t_stat_customers}, p-value = {p_value_customers}')
+
+        
     def analyze_and_plot_promotions(self, top_n=10):
         # Convert 'Date' to datetime format
         data = self.df_train.copy()
@@ -327,7 +348,6 @@ class BASICEDA:
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
-
     def analyze_weekday_open_stores(self, top_n=5):
         # Use self.df_train directly
         data = self.df_train.copy()
@@ -336,50 +356,47 @@ class BASICEDA:
         print("Columns:", data.columns)
         print("Data Preview:\n", data.head())
         
-        # Identify stores that are open every weekday (1-5)
+        # Filter stores that are open on weekends (Saturday and Sunday)
+        weekend_stores = data[data['DayOfWeek'] >= 6]  # 6=Saturday, 7=Sunday
+        
+        # Identify which of these stores are open on weekdays
         weekday_stores = data[(data['DayOfWeek'] >= 1) & (data['DayOfWeek'] <= 5) & (data['Open'] == 1)]
         
-        # Check if 'Store' column exists
-        if 'Store' not in data.columns:
-            raise KeyError("'Store' column is missing from the DataFrame")
-
-        open_stores = weekday_stores['Store'].unique()
-        
-        # Check if they are open on all weekdays
+        # Check if the stores open on weekends are also open on weekdays
         weekday_counts = weekday_stores.groupby('Store')['DayOfWeek'].nunique()
+        
+        # Identify stores that are open on weekdays
         open_weekday_stores = weekday_counts[weekday_counts == 5].index
+        closed_weekday_stores = weekday_counts[weekday_counts < 5].index
         
-        # Filter data for weekends (6=Saturday, 7=Sunday)
-        weekend_sales = data[data['DayOfWeek'] >= 6]  # Saturday and Sunday
-        
-        # Calculate sales for stores open all weekdays
-        weekend_sales_open_stores = weekend_sales[weekend_sales['Store'].isin(open_weekday_stores)]
-        weekend_sales_other_stores = weekend_sales[~weekend_sales['Store'].isin(open_weekday_stores)]
+        # Filter the weekend sales data for both groups
+        weekend_sales_open = weekend_stores[weekend_stores['Store'].isin(open_weekday_stores)]
+        weekend_sales_closed = weekend_stores[weekend_stores['Store'].isin(closed_weekday_stores)]
         
         # Aggregate sales
         sales_summary = pd.DataFrame({
-            'Open_Weekday_Stores': weekend_sales_open_stores.groupby('Date')['Sales'].sum(),
-            'Other_Stores': weekend_sales_other_stores.groupby('Date')['Sales'].sum()
+            'Open_Weekday_Stores': weekend_sales_open.groupby('Date')['Sales'].sum(),
+            'Closed_Weekday_Stores': weekend_sales_closed.groupby('Date')['Sales'].sum()
         }).reset_index()
         
-        # Select top N stores
-        top_stores_open = weekend_sales_open_stores.groupby('Store')['Sales'].sum().nlargest(top_n).index
-        top_stores_other = weekend_sales_other_stores.groupby('Store')['Sales'].sum().nlargest(top_n).index
-        
         # Create the plot
-        plt.figure(figsize=(14, 7))
+        plt.figure(figsize=(16, 8))  # Increase figure size for better visibility
         sns.lineplot(data=sales_summary, x='Date', y='Open_Weekday_Stores', label='Open Weekday Stores', marker='o')
-        sns.lineplot(data=sales_summary, x='Date', y='Other_Stores', label='Other Stores', marker='o', color='orange')
+        sns.lineplot(data=sales_summary, x='Date', y='Closed_Weekday_Stores', label='Closed Weekday Stores', marker='o', color='orange')
         
-        plt.title('Weekend Sales: Top Stores Open on All Weekdays vs Other Stores')
+        plt.title('Weekend Sales: Open vs Closed Weekday Stores')
         plt.xlabel('Date')
         plt.ylabel('Total Sales')
+        
+        # Format the x-axis for monthly ticks
         plt.xticks(rotation=45)
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%b %Y'))  # Format: Month Year
+        plt.gca().xaxis.set_major_locator(mdates.MonthLocator())  # Show one tick per month
+        
         plt.legend()
         plt.grid()
         plt.tight_layout()
         plt.show()
-
     def analyze_assortment_type_effect(self):
         # Use self.df_train directly
         data = self.df_train.copy()
@@ -401,109 +418,11 @@ class BASICEDA:
         plt.title('Total Sales by Assortment Type')
         plt.xlabel('Assortment Type')
         plt.ylabel('Total Sales')
-        plt.xticks(rotation=45)
+        # plt.xticks(rotation=45)
         plt.grid(axis='y')
         plt.tight_layout()
         plt.show()
-    def analyze_competition_factors(self):
-        # Use self.df_train directly
-        data = self.df_train.copy()
-        
-        # Check for required columns
-        required_columns = ['Sales', 'CompetitionOpenSinceYear', 'CompetitionOpenSinceMonth', 'CompetitionDistance']
-        for column in required_columns:
-            if column not in data.columns:
-                raise KeyError(f"Required column '{column}' is missing from the DataFrame")
-        
-        # Visualize CompetitionDistance vs Sales
-        plt.figure(figsize=(10, 6))
-        sns.scatterplot(data=data, x='CompetitionDistance', y='Sales')
-        plt.title('Sales vs. Competition Distance')
-        plt.xlabel('Distance to Nearest Competitor')
-        plt.ylabel('Sales')
-        plt.grid()
-        plt.show()
-        
-        # OLS regression for CompetitionDistance
-        X_distance = sm.add_constant(data['CompetitionDistance'])
-        model_distance = sm.OLS(data['Sales'], X_distance).fit()
-        print("Regression Results for Competition Distance:")
-        print(model_distance.summary())
+   
+    # def line_plot_compiteterdistance_sales(self):
 
-        # Visualize CompetitionOpenSinceYear vs Sales
-        plt.figure(figsize=(10, 6))
-        sns.boxplot(data=data, x='CompetitionOpenSinceYear', y='Sales')
-        plt.title('Sales by Year Competitors Opened')
-        plt.xlabel('Year Competitors Opened')
-        plt.ylabel('Sales')
-        plt.xticks(rotation=45)
-        plt.grid()
-        plt.show()
-        
-        # OLS regression for CompetitionOpenSinceYear
-        X_year = sm.add_constant(data['CompetitionOpenSinceYear'])
-        model_year = sm.OLS(data['Sales'], X_year).fit()
-        print("Regression Results for Competition Open Since Year:")
-        print(model_year.summary())
-        
-        # Visualize CompetitionOpenSinceMonth vs Sales
-        plt.figure(figsize=(10, 6))
-        sns.boxplot(data=data, x='CompetitionOpenSinceMonth', y='Sales')
-        plt.title('Sales by Month Competitors Opened')
-        plt.xlabel('Month Competitors Opened')
-        plt.ylabel('Sales')
-        plt.xticks(rotation=45)
-        plt.grid()
-        plt.show()
-        
-        # OLS regression for CompetitionOpenSinceMonth
-        X_month = sm.add_constant(data['CompetitionOpenSinceMonth'])
-        model_month = sm.OLS(data['Sales'], X_month).fit()
-        print("Regression Results for Competition Open Since Month:")
-        print(model_month.summary())
-
-    def analyze_competitor_opening_effect(data):
-        # Ensure 'CompetitionDistance' is numeric
-        data['CompetitionDistance'] = pd.to_numeric(data['CompetitionDistance'], errors='coerce')
-
-        # Identify stores with initially NaN CompetitionDistance
-        stores_with_nan = data[data['CompetitionDistance'].isna()]
-
-        # Identify valid distances after NaN
-        stores_with_valid_distance = data[data['CompetitionDistance'].notna()]
-
-        # Merge to find stores that changed from NA to valid values
-        merged_data = pd.merge(
-            stores_with_nan[['Store', 'Date', 'Sales']],
-            stores_with_valid_distance[['Store', 'Date', 'Sales']],
-            on='Store',
-            suffixes=('_before', '_after')
-        )
-
-        # Analyze sales before and after the competitor's opening
-        sales_summary = merged_data.groupby('Store').agg({
-            'Sales_before': 'mean',
-            'Sales_after': 'mean'
-        }).reset_index()
-
-        # Print summary for debugging
-        print(sales_summary)
-
-        # Visualize the effect
-        plt.figure(figsize=(10, 6))
-        sns.barplot(data=sales_summary.melt(id_vars='Store', value_vars=['Sales_before', 'Sales_after']),
-                    x='Store', y='value', hue='variable', palette='muted')
-        
-        plt.title('Average Sales Before and After Competitor Opening')
-        plt.xlabel('Store ID')
-        plt.ylabel('Average Sales')
-        plt.xticks(rotation=45)
-        plt.legend(title='Sales Period')
-        plt.grid(axis='y')
-        plt.tight_layout()
-        plt.show()
-
-        # Perform a paired t-test to see if the sales difference is significant
-        t_stat, p_value = stats.ttest_rel(sales_summary['Sales_before'], sales_summary['Sales_after'])
-        print(f'T-test: t-statistic = {t_stat}, p-value = {p_value}')
 
