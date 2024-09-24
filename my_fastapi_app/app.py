@@ -69,7 +69,7 @@ class TestSalesForecasting:
 
 sales_forecasting = TestSalesForecasting()
 
-model_file_path = "/10 A KAI 2/Week 4/Sales_Forcasting/notebook/random_forest_model_2024-09-24-14-41-47.pkl"
+model_file_path = "/10 A KAI 2/Week 4/Sales_Forcasting/model/random_forest_model_2024-09-24-14-41-47.pkl"
 
 @app.post("/predict-sales/", response_model=list[SalesPredictionResponse])
 async def predict_sales(file: UploadFile = File(...)):

@@ -186,19 +186,15 @@ class SalesForecasting:
         logging.info(f'Available columns after preprocessing: {self.preprocessed_data.columns.tolist()}')
         return self.preprocessed_data
 
-    def fit_random_forest_model1(self):
+    def fit_random_forest_model(self):
         """Fits a Random Forest model using the preprocessed data."""
         if self.preprocessed_data is None:
             logging.error("Data not preprocessed. Please run preprocess_data() first.")
             return
 
-        # Define features to remove
-        features_to_remove = ['Customers','Promo2', 'CompetitionDistance', 'Sales_lag_1', 'Sales_lag_7']
 
-        # Drop only the columns that exist in the DataFrame
-        existing_features_to_remove = [feature for feature in features_to_remove if feature in self.preprocessed_data.columns]
-
-        X = self.preprocessed_data.drop(columns=['Sales'] + existing_features_to_remove)
+      
+        X = self.preprocessed_data.drop(columns=['Sales'])
         y = self.preprocessed_data['Sales']
 
         # Create a pipeline
@@ -221,41 +217,53 @@ class SalesForecasting:
         plt.title("Random Forest Feature Importances")
         plt.show()
 
-    def evaluate_model1(self):
-        """Evaluates the Random Forest model on a test set."""
+    def evaluate_model(self):
         if self.preprocessed_data is None:
             logging.error("Data not preprocessed. Please run preprocess_data() first.")
             return
 
-        features_to_remove = ['Customers', 'Promo2', 'CompetitionDistance', 'Sales_lag_1', 'Sales_lag_7']
-
-        # Drop only the columns that exist in the DataFrame
-        existing_features_to_remove = [feature for feature in features_to_remove if feature in self.preprocessed_data.columns]
-        X_rf = self.preprocessed_data.drop(columns=['Sales'] + existing_features_to_remove)
+       
+      
+        X_rf = self.preprocessed_data.drop(columns=['Sales'] )
         y_rf = self.preprocessed_data['Sales']
+
         X_train_rf, X_test_rf, y_train_rf, y_test_rf = train_test_split(X_rf, y_rf, test_size=0.2, random_state=42)
 
-        # Predict using Random Forest
         rf_predictions = self.model_rf.predict(X_test_rf)
+
         rf_mae = mean_absolute_error(y_test_rf, rf_predictions)
         rf_r2 = r2_score(y_test_rf, rf_predictions)
+
+        lower_bound, upper_bound = self.estimate_confidence_intervals(X_test_rf)
+
         logging.info(f'Random Forest - MAE: {rf_mae}, R^2: {rf_r2}')
+        logging.info(f'Confidence Interval: [{lower_bound}, {upper_bound}]')
+
+    def estimate_confidence_intervals(self, X_test, n_iterations=1000, alpha=0.05):
+        """Estimate confidence intervals for predictions using bootstrap sampling."""
+        predictions = []
+
+        for _ in range(n_iterations):
+            X_bootstrap, _, y_bootstrap, _ = train_test_split(self.preprocessed_data.drop(columns=['Sales']),
+                                                            self.preprocessed_data['Sales'],
+                                                            test_size=0.2, random_state=np.random.randint(0, 10000))
+            model_rf_bootstrap = RandomForestRegressor(n_estimators=50, random_state=42)
+            model_rf_bootstrap.fit(X_bootstrap, y_bootstrap)
+            pred = model_rf_bootstrap.predict(X_test)
+            predictions.append(pred)
+
+        predictions = np.array(predictions)
+        lower_bound = np.percentile(predictions, 100 * alpha / 2, axis=0)
+        upper_bound = np.percentile(predictions, 100 * (1 - alpha / 2), axis=0)
+
+        return lower_bound, upper_bound
 
     def save_random_forest_model(self):
-        """Saves the trained Random Forest model to a file with a timestamp."""
         if self.model_rf is None:
             logging.error('Model not trained. Please fit the model first.')
             return
         
-        # Get the current timestamp in the format YYYY-MM-DD-HH-MM-SS
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        
-        # Create a file name with the timestamp
         file_name = f'random_forest_model_{timestamp}.pkl'
-        
-        # Save the model with the generated file name
         joblib.dump(self.model_rf, file_name)
-        
         logging.info(f'Random Forest model saved as {file_name}')
-
-    
