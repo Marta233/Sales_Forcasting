@@ -3,3 +3,4 @@ Data/*
 # Allow .dvc files
 .dvc
 myenv
+model

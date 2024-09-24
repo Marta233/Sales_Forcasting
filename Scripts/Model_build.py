@@ -48,36 +48,23 @@ class ModelPrepro:
     def _calculate_days_after_last_holiday(self, current_date, holiday_dates):
         past_holidays = holiday_dates[holiday_dates < current_date]
         return (current_date - past_holidays[-1]).days if len(past_holidays) > 0 else np.nan
+
     def feature_engineering(self):
         self.data['weekend'] = self.data['DayOfWeek'].apply(lambda x: 1 if x > 5 else 0)
         self.data['weekdays'] = self.data['DayOfWeek'].apply(lambda x: 1 if x <= 5 else 0)
         self.data['Quarter'] = self.data['Date'].dt.quarter
         self.data['Month'] = self.data['Date'].dt.month
         self.data['Seasons'] = self.data['Month'].apply(lambda x: 1 if 3 <= x <= 6 else 2 if 7 <= x <= 9 else 3 if 10 <= x <= 12 else 4)
-        self.data['Sales_lag_1'] = self.data['Sales'].shift(1)  # Sales on the previous day
-        self.data['Sales_lag_7'] = self.data['Sales'].shift(7)  # Sales 7 days ago
-
+        self.data['IsStateHoliday'] = self.data['StateHoliday'].apply(lambda x: 0 if x == 0 else 1)
+        self.data['StateHoliday'].dropna(inplace=True)
     def handel_missing(self):
-        # Calculate the percentage of missing values for each column
-        missing_percentage = self.data.isnull().mean() * 100
-
-        # Identify columns with more than 32% missing values
-        columns_to_remove = missing_percentage[missing_percentage > 31].index
-
-        # Remove those columns from the DataFrame
-        self.data.drop(columns=columns_to_remove, inplace=True)
         # Optionally, print the remaining columns and their missing percentages
         remaining_missing_percentage = self.data.isnull().mean() * 100
         self.data['DaysToNextHoliday'].fillna(self.data['DaysToNextHoliday'].mean(), inplace=True)
         self.data['DaysAfterLastHoliday'].fillna(self.data['DaysAfterLastHoliday'].mean(), inplace=True)
-        self.data['CompetitionDistance'].fillna(self.data['CompetitionDistance'].mean(), inplace=True)
-        mean_sales_lag_1 = self.data['Sales_lag_1'].mean()
-        mean_sales_lag_7 = self.data['Sales_lag_7'].mean()
-        self.data['Sales_lag_1'].fillna(mean_sales_lag_1, inplace=True)
-        self.data['Sales_lag_7'].fillna(mean_sales_lag_7, inplace=True)
+        # self.data['CompetitionDistance'].fillna(self.data['CompetitionDistance'].mean(), inplace=True)
         # Transforming the 'IsStateHoliday' column
-        self.data['IsStateHoliday'] = self.data['StateHoliday'].apply(lambda x: 0 if x == 0 else 1)
-        self.data['StateHoliday'].dropna(inplace=True)
+        
         return remaining_missing_percentage
     def salse_othe_futur_corr(self):
         # Ensure the data has been encoded
@@ -169,9 +156,11 @@ class SalesForecasting:
         preprocessor.days_to_next_holiday()
         preprocessor.days_after_last_holiday()
         preprocessor.feature_engineering()
+        # preprocessor.feature_engineering1
         preprocessor.handel_missing()
-        preprocessor.encode_categorical_features()  # Ensure this is called before dropping columns
-        preprocessor.scale_data()
+
+        
+        # preprocessor.encode_categorical_features()  # Ensure this is called before dropping columns
 
         self.preprocessed_data = preprocessor.data
 
@@ -193,18 +182,19 @@ class SalesForecasting:
             return
 
         # Define features to remove
-        features_to_remove = ['Customers','Promo2', 'CompetitionDistance', 'Sales_lag_1', 'Sales_lag_7']
+        features_to_remove = ['Customers']
 
         # Drop only the columns that exist in the DataFrame
         existing_features_to_remove = [feature for feature in features_to_remove if feature in self.preprocessed_data.columns]
 
+        # Prepare features (X) and target (y)
         X = self.preprocessed_data.drop(columns=['Sales'] + existing_features_to_remove)
         y = self.preprocessed_data['Sales']
 
-        # Create a pipeline
+        # Create a pipeline with scaling and model
         self.model_rf = Pipeline(steps=[
             ('scaler', StandardScaler()),  # Scaling step
-            ('model_rf', RandomForestRegressor(n_estimators=50, random_state=42, n_jobs=-1))  # Model
+            ('model_rf', RandomForestRegressor(n_estimators=50, random_state=42, n_jobs=-1))  # Random Forest model
         ])
 
         # Fit the model
@@ -216,29 +206,37 @@ class SalesForecasting:
         feature_names = X.columns
         importance_df = pd.DataFrame({'Feature': feature_names, 'Importance': feature_importances}).sort_values(by='Importance', ascending=False)
 
+        # Plot the feature importance
         plt.figure(figsize=(12, 6))
         sns.barplot(x='Importance', y='Feature', data=importance_df)
         plt.title("Random Forest Feature Importances")
         plt.show()
-
     def evaluate_model1(self):
         """Evaluates the Random Forest model on a test set."""
         if self.preprocessed_data is None:
             logging.error("Data not preprocessed. Please run preprocess_data() first.")
             return
 
-        features_to_remove = ['Customers', 'Promo2', 'CompetitionDistance', 'Sales_lag_1', 'Sales_lag_7']
+        # Define features to remove
+        features_to_remove = ['Customers']
 
         # Drop only the columns that exist in the DataFrame
         existing_features_to_remove = [feature for feature in features_to_remove if feature in self.preprocessed_data.columns]
+
+        # Prepare features (X) and target (y)
         X_rf = self.preprocessed_data.drop(columns=['Sales'] + existing_features_to_remove)
         y_rf = self.preprocessed_data['Sales']
+
+        # Split the data into training and test sets
         X_train_rf, X_test_rf, y_train_rf, y_test_rf = train_test_split(X_rf, y_rf, test_size=0.2, random_state=42)
 
-        # Predict using Random Forest
+        # Predict using the Random Forest model
         rf_predictions = self.model_rf.predict(X_test_rf)
+
+        # Calculate metrics: MAE and R^2 score
         rf_mae = mean_absolute_error(y_test_rf, rf_predictions)
         rf_r2 = r2_score(y_test_rf, rf_predictions)
+
         logging.info(f'Random Forest - MAE: {rf_mae}, R^2: {rf_r2}')
 
     def save_random_forest_model(self):
@@ -258,4 +256,58 @@ class SalesForecasting:
         
         logging.info(f'Random Forest model saved as {file_name}')
 
-    
+
+
+
+
+    # def evaluate_model1(self):
+    #     if self.preprocessed_data is None:
+    #         logging.error("Data not preprocessed. Please run preprocess_data() first.")
+    #         return
+
+    #     features_to_remove = ['Customers']
+    #     existing_features_to_remove = [feature for feature in features_to_remove if feature in self.preprocessed_data.columns]
+
+    #     X_rf = self.preprocessed_data.drop(columns=['Sales'] + existing_features_to_remove)
+    #     y_rf = self.preprocessed_data['Sales']
+
+    #     X_train_rf, X_test_rf, y_train_rf, y_test_rf = train_test_split(X_rf, y_rf, test_size=0.2, random_state=42)
+
+    #     rf_predictions = self.model_rf.predict(X_test_rf)
+
+    #     rf_mae = mean_absolute_error(y_test_rf, rf_predictions)
+    #     rf_r2 = r2_score(y_test_rf, rf_predictions)
+
+    #     lower_bound, upper_bound = self.estimate_confidence_intervals(X_test_rf)
+
+    #     logging.info(f'Random Forest - MAE: {rf_mae}, R^2: {rf_r2}')
+    #     logging.info(f'Confidence Interval: [{lower_bound}, {upper_bound}]')
+
+    # def estimate_confidence_intervals(self, X_test, n_iterations=1000, alpha=0.05):
+    #     """Estimate confidence intervals for predictions using bootstrap sampling."""
+    #     predictions = []
+
+    #     for _ in range(n_iterations):
+    #         X_bootstrap, _, y_bootstrap, _ = train_test_split(self.preprocessed_data.drop(columns=['Sales']),
+    #                                                         self.preprocessed_data['Sales'],
+    #                                                         test_size=0.2, random_state=np.random.randint(0, 10000))
+    #         model_rf_bootstrap = RandomForestRegressor(n_estimators=50, random_state=42)
+    #         model_rf_bootstrap.fit(X_bootstrap, y_bootstrap)
+    #         pred = model_rf_bootstrap.predict(X_test)
+    #         predictions.append(pred)
+
+    #     predictions = np.array(predictions)
+    #     lower_bound = np.percentile(predictions, 100 * alpha / 2, axis=0)
+    #     upper_bound = np.percentile(predictions, 100 * (1 - alpha / 2), axis=0)
+
+    #     return lower_bound, upper_bound
+
+    # def save_random_forest_model(self):
+    #     if self.model_rf is None:
+    #         logging.error('Model not trained. Please fit the model first.')
+    #         return
+        
+    #     timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    #     file_name = f'random_forest_model_{timestamp}.pkl'
+    #     joblib.dump(self.model_rf, file_name)
+    #     logging.info(f'Random Forest model saved as {file_name}')
