@@ -1,25 +1,34 @@
-code:
-
-markdown
-Copy code
 # Sales Forecasting Project
-
-This project implements a sales forecasting solution using machine learning techniques, specifically a Random Forest model. Initially, an LSTM (Long Short-Term Memory) model was explored, but it did not yield satisfactory results, prompting a shift to the more robust Random Forest algorithm. This project also includes the development of a FastAPI for serving predictions.
-
 ## Table of Contents
 
 - [Project Overview](#project-overview)
+- [Data Source](#Data_Source)
 - [Technologies Used](#technologies-used)
+- [EDA](#Insight from the data)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Model Details](#model-details)
 - [API Endpoints](#api-endpoints)
 - [Contributing](#contributing)
 - [License](#license)
-
 ## Project Overview
-
+This project implements a sales forecasting solution using machine learning techniques, specifically a Random Forest model. Initially, an LSTM (Long Short-Term Memory) model was explored, but it did not yield satisfactory results, prompting a shift to the more robust Random Forest algorithm. This project also includes the development of a FastAPI for serving predictions.
 The goal of this project is to accurately predict future sales based on historical data. The Random Forest model was chosen for its performance and interpretability. This solution includes data preprocessing, feature engineering, and model evaluation steps, and it serves as a foundation for further improvements and refinements.
+## Data Source 
+This project uses the Rossmann Store Sales dataset from Kaggle, which contains historical sales data for Rossmann drug stores across Europe.
+#### Features:
+   - Store metadata (e.g., size, location, competition)
+
+   - Sales data (daily records from 2013–2015)
+
+   - Promotional campaigns and holidays
+#### Files Used:
+
+   - train.csv - Historical sales data (2013–2015)
+
+   - test.csv - Sales data for forecasting (2015)
+
+   - store.csv - Supplemental store information
 
 ## Technologies Used
 
@@ -30,8 +39,12 @@ The goal of this project is to accurately predict future sales based on historic
 - joblib
 - FastAPI
 - Matplotlib
+- tensorflow
 - Seaborn
 - Jupyter Notebook (for experimentation)
+
+## EDA 
+
 
 ## Installation
 
