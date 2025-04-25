@@ -44,7 +44,7 @@ This project uses the Rossmann Store Sales dataset from Kaggle, which contains h
 - Jupyter Notebook (for experimentation)
 
 ## EDA 
-### 1. Sales Distribution by Category  
+### 1. Sales Distribution by befor and after Holiday
 ![Total Sales by Holiday Category](sales_distribution_holiday_befor.png)
    #### Highest Sales:
  - Regular Days dominate sales volume (expected baseline).
@@ -60,76 +60,36 @@ This project uses the Rossmann Store Sales dataset from Kaggle, which contains h
 ![Correlation Matrix](/salesvscustomercorrelation.png)  
   #### Sales ↔ Customers (0.89):
   - Near-perfect linear relationship—higher foot traffic directly drives sales.
-
-Model Details
-Model Type: Random Forest
-Evaluation Metrics: Mean Absolute Error (MAE) and R² score.
-Feature Importance Visualization: The model includes a feature importance analysis to understand which features most significantly impact sales predictions.
-API Endpoints
-POST /predict
-Request body: JSON format containing the necessary features for prediction.
-Response: JSON format with the predicted sales.
-Example Request
-json
-Copy code
-{
-  "feature1": value1,
-  "feature2": value2,
-  ...
-}
-Example Response
-json
-Copy code
-{
-  "predicted_sales": value
-}
-Contributing
-Contributions are welcome! Please feel free to submit a pull request or open an issue for discussion.
-
-
+## Model Details
+ ### Model Architecture
+   1. Random Forest:
+       - Used for baseline modeling with 100 estimators
+       - Handles both numerical and categorical features
+   2. LSTM (Long Short-Term Memory):
+       - Sequence model with 50 hidden units
+       - Processes time-series data with a 7-day lookback window
+       - Includes dropout layers (p=0.2) for regularization
+  ### Model result and Evaluation 
 ## Installation
-
 To set up the project locally, follow these steps:
-
 1. Clone the repository:
-
    ```bash
-   git clone https://github.com/yourusername/sales-forecasting.git
+   git clone https://github.com/Marta233/Sales_Forcasting.git
    cd sales-forecasting
-Install the required packages:
-
-bash
-Copy code
+2. Install the required packages:
+  ```bash
 pip install -r requirements.txt
-Usage
-Data Preparation:
-
-Place your sales data in the designated directory. The script is designed to load and preprocess the data automatically.
-Model Training:
-
-Run the train_model.py script to preprocess the data and fit the Random Forest model.
-bash
-Copy code
-python train_model.py
-Making Predictions:
-
-Use the TestSalesForecasting class to make predictions on new test data. Ensure your test data follows the same preprocessing steps as the training data.
-Starting the API:
-
-Run the FastAPI application:
-bash
-Copy code
-uvicorn app:app --reload
-The API will be available at http://127.0.0.1:8000.
-
-
+3. Usage
+  - Data Preparation:
+      Place your sales data in the designated directory. The script is designed to load and preprocess the data automatically.
+  - Model Training:
+      Run the Model_build.py script to preprocess the data and fit the model.
+  - Making Predictions: Use the TestSalesForecasting class to make predictions on new test data. Ensure your test data follows the same preprocessing steps as the training data.
+4. Starting the API by running the FastAPI application:
+```bash
+  uvicorn app:app --reload
+  The API will be available at http://127.0.0.1:8000.
+  ```
 License
 This project is licensed under the MIT License. See the LICENSE file for details.
 
-markdown
-Copy code
-
-### Notes:
-- Replace `yourusername` in the clone URL with your actual GitHub username.
-- Ensure that any file names and paths are accurate according to your project structure.
-- Add or modify sections as needed to better reflect your project’s specifics.
