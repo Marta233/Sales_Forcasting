@@ -7,7 +7,12 @@ from scipy import stats
 import matplotlib.dates as mdates
 # import statsmodels.api as sm
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    filename='logs/eda_log.txt',  # Your log file path
+    filemode='a'  # Use 'w' to overwrite each time, or 'a' to append
+)
 class BASICEDA:
     def __init__(self, df_train, df_test, df_store):
         self.df_train = df_train
@@ -42,7 +47,7 @@ class BASICEDA:
         logging.info("Merging training data with store data...")
         self.df_train = self.df_train.merge(self.df_store, on='Store', how='left')
         logging.info("Merging completed. New training data shape: {}".format(self.df_train.shape))
-        return self.df_train
+        return self.df_train.head()
 
     def df_basic_info(self):
         logging.info("Describing the training data...")
@@ -50,32 +55,27 @@ class BASICEDA:
 
     def missing_percentage(self):
         # Calculate the percentage of missing values
+        self.df_train['StateHoliday'] = self.df_train['StateHoliday'].astype(str)
         missing_percent = self.df_train.isnull().sum() / len(self.df_train) * 100
-        
         # Create a DataFrame to display the results nicely
         missing_df = pd.DataFrame({
-            'Column': self.df_train.columns,
-            'Missing Percentage': missing_percent
+            'columns': self.df_train.columns,
+            'Missing Percentage': missing_percent.values
         }).sort_values(by='Missing Percentage', ascending=False)
-        
         return missing_df
-
     def handle_missing_values(self):
         logging.info("Handling missing values in the training data...")
         numeric_cols = self.df_train.select_dtypes(include=['float64', 'int64']).columns
         self.df_train[numeric_cols] = self.df_train[numeric_cols].fillna(self.df_train[numeric_cols].median())
-
         categorical_cols = self.df_train.select_dtypes(include=['object']).columns
         self.df_train[categorical_cols] = self.df_train[categorical_cols].fillna(self.df_train[categorical_cols].mode().iloc[0])
-
         logging.info("Missing values handled. New training data shape: {}".format(self.df_train.shape))
         return self.df_train
-
     def data_types(self):
         data_typs = self.df_train.dtypes
         return pd.DataFrame({
             'Column': self.df_train.columns,
-            'Data Type': data_typs
+            'Data Type': data_typs.values
         }).sort_values(by='Data Type', ascending=False)
 
     def outlier_check_perc(self):
@@ -92,7 +92,7 @@ class BASICEDA:
         
         return pd.DataFrame({
             'Column': numeric_df.columns,
-            'Outlier Percentage': outlier_percentage
+            'Outlier Percentage': outlier_percentage.values
         }).sort_values(by='Outlier Percentage', ascending=False)
 
     def analyze_sales_holidays(self):
@@ -141,7 +141,7 @@ class BASICEDA:
         ).reset_index()
 
     def visualize_total_sales(self, sales_summary):
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(6, 3))
         sns.barplot(x='Category', y='Total_Sales', data=sales_summary)
         plt.title('Total Sales by Category')
         plt.ylabel('Total Sales')
@@ -151,7 +151,7 @@ class BASICEDA:
         plt.show()
 
     def visualize_average_sales(self, sales_summary):
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(6, 3))
         sns.barplot(x='Category', y='Average_Sales', data=sales_summary)
         plt.title('Average Sales by Category')
         plt.ylabel('Average Sales')
@@ -177,7 +177,7 @@ class BASICEDA:
         ).reset_index()
 
     def visualize_seasonal_sales(self, seasonal_summary):
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(6, 3))
         sns.lineplot(x='Month', y='Total_Sales', data=seasonal_summary)
         plt.title('Total Sales by Month')
         plt.ylabel('Total Sales')
@@ -188,16 +188,12 @@ class BASICEDA:
     def corr_customer_sales(self):
         logging.info("Analyzing customer sales correlations...")
         df = self.df_train.copy()
-        
         # Ensure 'Customers' and 'Sales' are numeric and handle any non-numeric data
         df = df[['Customers', 'Sales']].apply(pd.to_numeric, errors='coerce')
-        
         # Drop rows with NaN values resulting from coercion
         df = df.dropna()
-        
         # Compute the correlation matrix
         corr_matrix = df.corr()
-        
         plt.figure(figsize=(8, 6))
         sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", vmin=-1, vmax=1)
         plt.title('Correlation Matrix')
@@ -230,7 +226,7 @@ class BASICEDA:
         print(promo_customers)
 
         # Visualization of average sales
-        plt.figure(figsize=(8, 6))
+        plt.figure(figsize=(6, 5))
         sns.barplot(x='Promo', y='Sales', data=promo_sales)
         plt.title('Average Sales by Promotion Status')
         plt.ylabel('Average Sales')
@@ -239,7 +235,7 @@ class BASICEDA:
         plt.show()
 
         # Visualization of average customers
-        plt.figure(figsize=(8, 6))
+        plt.figure(figsize=(6, 5))
         sns.barplot(x='Promo', y='Customers', data=promo_customers)
         plt.title('Average Customers by Promotion Status')
         plt.ylabel('Average Customers')
@@ -257,8 +253,6 @@ class BASICEDA:
         customers_without_promo = df[df['Promo'] == 0]['Customers']
         t_stat_customers, p_value_customers = stats.ttest_ind(customers_with_promo, customers_without_promo)
         print(f'T-test for Customers: t-statistic = {t_stat_customers}, p-value = {p_value_customers}')
-
-        
     def analyze_and_plot_promotions(self, top_n=10):
         # Convert 'Date' to datetime format
         data = self.df_train.copy()
@@ -293,7 +287,7 @@ class BASICEDA:
         )
 
         # Create the bar plot
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(6, 5))
         sns.barplot(x='Store', y='Average_Sales', hue='Promo_Status', data=melted_data)
         
         plt.title('Average Sales with and without Promotions for Selected Stores')
@@ -348,16 +342,13 @@ class BASICEDA:
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
-
     def analyze_weekday_weekend_sales(self):
         data = self.df_train.copy()
         """
         Analyzes which stores are open on weekends and weekdays, and compares their sales.
         Produces a plot to visualize the results.
-        
         Parameters:
         - data: DataFrame containing store data with 'DayOfWeek' and 'Open' columns.
-
         Returns:
         - Tuple of (stores open on both weekdays and weekends, stores closed on weekdays but open on weekends)
         """
@@ -384,8 +375,11 @@ class BASICEDA:
             'Stores Open on Weekdays and Weekends': len(weekend_sales_open['Store'].unique()),
             'Stores Closed on Weekdays but Open on Weekends': len(weekend_sales_closed['Store'].unique())
         }
-        
-        plt.figure(figsize=(10, 6))
+        # Calculate mean sales by day for each group
+        sales_open = weekend_sales_open.groupby('DayOfWeek')['Sales'].mean()
+        sales_closed = weekend_sales_closed.groupby('DayOfWeek')['Sales'].mean()
+
+        plt.figure(figsize=(6, 3))
         sns.barplot(x=list(store_counts.keys()), y=list(store_counts.values()), palette="coolwarm")
         plt.title('Comparison of Stores Open on Weekdays vs Weekends')
         plt.ylabel('Number of Stores')

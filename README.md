@@ -4,10 +4,10 @@
 - [Project Overview](#project-overview)
 - [Data Source](#Data_Source)
 - [Technologies Used](#technologies-used)
-- [EDA](#Insight from the data)
+- [EDA](#Insight_from_the_data)
+- [Model Details](#model-details)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Model Details](#model-details)
 - [API Endpoints](#api-endpoints)
 - [Contributing](#contributing)
 - [License](#license)
@@ -44,6 +44,47 @@ This project uses the Rossmann Store Sales dataset from Kaggle, which contains h
 - Jupyter Notebook (for experimentation)
 
 ## EDA 
+### 1. Sales Distribution by Category  
+![Total Sales by Holiday Category](/sales_distribution_holiday_befor.png)  
+   #### Highest Sales:
+        - Regular Days dominate sales volume (expected baseline).
+        - During State Holidays show a noticeable spike, suggesting higher customer turnout during official holidays.
+   #### School Holidays:
+       - Sales are lower during school holidays compared to regular days, possibly due to family travel or reduced local demand.
+### 2. Monthly Sales Trends  
+![Total Sales by Month](/seasonal_treand.png) 
+  #### Peak Seasons:
+        - Highest sales occur in December (likely due to holiday shopping, year-end promotions).
+        - Secondary peaks in May/June (possibly summer season demand) and October (pre-holiday buildup).
+### 3. Feature Correlations  
+![Correlation Matrix](/salesvscustomercorrelation.png)  
+  #### Sales ↔ Customers (0.89):
+     - Near-perfect linear relationship—higher foot traffic directly drives sales.
+     
+Model Details
+Model Type: Random Forest
+Evaluation Metrics: Mean Absolute Error (MAE) and R² score.
+Feature Importance Visualization: The model includes a feature importance analysis to understand which features most significantly impact sales predictions.
+API Endpoints
+POST /predict
+Request body: JSON format containing the necessary features for prediction.
+Response: JSON format with the predicted sales.
+Example Request
+json
+Copy code
+{
+  "feature1": value1,
+  "feature2": value2,
+  ...
+}
+Example Response
+json
+Copy code
+{
+  "predicted_sales": value
+}
+Contributing
+Contributions are welcome! Please feel free to submit a pull request or open an issue for discussion.
 
 
 ## Installation
@@ -81,30 +122,6 @@ Copy code
 uvicorn app:app --reload
 The API will be available at http://127.0.0.1:8000.
 
-Model Details
-Model Type: Random Forest
-Evaluation Metrics: Mean Absolute Error (MAE) and R² score.
-Feature Importance Visualization: The model includes a feature importance analysis to understand which features most significantly impact sales predictions.
-API Endpoints
-POST /predict
-Request body: JSON format containing the necessary features for prediction.
-Response: JSON format with the predicted sales.
-Example Request
-json
-Copy code
-{
-  "feature1": value1,
-  "feature2": value2,
-  ...
-}
-Example Response
-json
-Copy code
-{
-  "predicted_sales": value
-}
-Contributing
-Contributions are welcome! Please feel free to submit a pull request or open an issue for discussion.
 
 License
 This project is licensed under the MIT License. See the LICENSE file for details.
