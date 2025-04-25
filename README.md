@@ -45,9 +45,10 @@ This project uses the Rossmann Store Sales dataset from Kaggle, which contains h
 
 ## EDA 
 ### 1. Sales Distribution by Category  
-![Total Sales by Holiday Category](/sales_distribution_holiday_befor.png)  
+![Total Sales by Holiday Category](sales_distribution_holiday_befor.png)  
    #### Highest Sales:
         - Regular Days dominate sales volume (expected baseline).
+
         - During State Holidays show a noticeable spike, suggesting higher customer turnout during official holidays.
    #### School Holidays:
        - Sales are lower during school holidays compared to regular days, possibly due to family travel or reduced local demand.
@@ -60,7 +61,7 @@ This project uses the Rossmann Store Sales dataset from Kaggle, which contains h
 ![Correlation Matrix](/salesvscustomercorrelation.png)  
   #### Sales ↔ Customers (0.89):
      - Near-perfect linear relationship—higher foot traffic directly drives sales.
-     
+
 Model Details
 Model Type: Random Forest
 Evaluation Metrics: Mean Absolute Error (MAE) and R² score.
