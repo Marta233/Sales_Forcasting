@@ -69,7 +69,7 @@ This project uses the Rossmann Store Sales dataset from Kaggle, which contains h
        - Sequence model with 50 hidden units
        - Processes time-series data with a 7-day lookback window
        - Includes dropout layers (p=0.2) for regularization
-  ### Model result and Evaluation 
+   3. Model result and Evaluation 
 ## Installation
 To set up the project locally, follow these steps:
 1. Clone the repository:
@@ -77,14 +77,15 @@ To set up the project locally, follow these steps:
    git clone https://github.com/Marta233/Sales_Forcasting.git
    cd sales-forecasting
 2. Install the required packages:
-  ```bash
+```bash
 pip install -r requirements.txt
+   ```
 3. Usage
   - Data Preparation:
       Place your sales data in the designated directory. The script is designed to load and preprocess the data automatically.
   - Model Training:
       Run the Model_build.py script to preprocess the data and fit the model.
-  - Making Predictions: Use the TestSalesForecasting class to make predictions on new test data. Ensure your test data follows the same preprocessing steps as the training data.
+  - Making Predictions: Use the TestSalesForecasting class to make predictions on new test data Ensure your test data follows the same preprocessing steps as the training data.
 4. Starting the API by running the FastAPI application:
 ```bash
   uvicorn app:app --reload
