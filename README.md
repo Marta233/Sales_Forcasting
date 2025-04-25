@@ -45,7 +45,7 @@ This project uses the Rossmann Store Sales dataset from Kaggle, which contains h
 
 ## EDA 
 ### 1. Sales Distribution by Category  
-![Total Sales by Holiday Category](E:\Portfolio\Sales_Forcasting\sales_distribution_holiday_befor.png)  
+![Total Sales by Holiday Category](sales_distribution_holiday_befor.png)
    #### Highest Sales:
         - Regular Days dominate sales volume (expected baseline).
 
