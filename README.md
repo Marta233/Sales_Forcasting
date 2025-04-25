@@ -47,20 +47,19 @@ This project uses the Rossmann Store Sales dataset from Kaggle, which contains h
 ### 1. Sales Distribution by Category  
 ![Total Sales by Holiday Category](sales_distribution_holiday_befor.png)
    #### Highest Sales:
-        - Regular Days dominate sales volume (expected baseline).
-
-        - During State Holidays show a noticeable spike, suggesting higher customer turnout during official holidays.
+ - Regular Days dominate sales volume (expected baseline).
+  - During State Holidays show a noticeable spike, suggesting higher customer turnout during official holidays.
    #### School Holidays:
-       - Sales are lower during school holidays compared to regular days, possibly due to family travel or reduced local demand.
+  - Sales are lower during school holidays compared to regular days, possibly due to family travel or reduced local demand.
 ### 2. Monthly Sales Trends  
 ![Total Sales by Month](./seasonal_treand.png) 
   #### Peak Seasons:
-        - Highest sales occur in December (likely due to holiday shopping, year-end promotions).
-        - Secondary peaks in May/June (possibly summer season demand) and October (pre-holiday buildup).
+  - Highest sales occur in December (likely due to holiday shopping, year-end promotions).
+  - Secondary peaks in May/June (possibly summer season demand) and October (pre-holiday buildup).
 ### 3. Feature Correlations  
 ![Correlation Matrix](/salesvscustomercorrelation.png)  
   #### Sales ↔ Customers (0.89):
-     - Near-perfect linear relationship—higher foot traffic directly drives sales.
+  - Near-perfect linear relationship—higher foot traffic directly drives sales.
 
 Model Details
 Model Type: Random Forest
