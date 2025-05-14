@@ -1,6 +1,6 @@
-# Sales Forecasting Project
-## Table of Contents
+# 📊 Sales Forecasting Project
 
+## 📁 Table of Contents
 - [Project Overview](#project-overview)
 - [Data Source](#Data_Source)
 - [Technologies Used](#technologies-used)
@@ -11,18 +11,18 @@
 - [API Endpoints](#api-endpoints)
 - [Contributing](#contributing)
 - [License](#license)
-## Project Overview
+## 💡 Project Overview
 This project implements a sales forecasting solution using machine learning techniques, specifically a Random Forest model. Initially, an LSTM (Long Short-Term Memory) model was explored, but it did not yield satisfactory results, prompting a shift to the more robust Random Forest algorithm. This project also includes the development of a FastAPI for serving predictions.
 The goal of this project is to accurately predict future sales based on historical data. The Random Forest model was chosen for its performance and interpretability. This solution includes data preprocessing, feature engineering, and model evaluation steps, and it serves as a foundation for further improvements and refinements.
-## Data Source 
+## 🗂️  Data Source 
 This project uses the Rossmann Store Sales dataset from Kaggle, which contains historical sales data for Rossmann drug stores across Europe.
-#### Features:
+### 📌 Features:
    - Store metadata (e.g., size, location, competition)
 
    - Sales data (daily records from 2013–2015)
 
    - Promotional campaigns and holidays
-#### Files Used:
+### 🗃️ Files Used:
 
    - train.csv - Historical sales data (2013–2015)
 
@@ -30,38 +30,37 @@ This project uses the Rossmann Store Sales dataset from Kaggle, which contains h
 
    - store.csv - Supplemental store information
 
-## Technologies Used
+## 🛠️ Technologies Used
+- Python 🐍  
+- pandas 🐼  
+- NumPy 🔢  
+- scikit-learn 🔬  
+- joblib 💾  
+- FastAPI ⚡  
+- Matplotlib 📊  
+- tensorflow 🤖  
+- Seaborn 🌊  
+- Jupyter Notebook 📓 
 
-- Python
-- pandas
-- NumPy
-- scikit-learn
-- joblib
-- FastAPI
-- Matplotlib
-- tensorflow
-- Seaborn
-- Jupyter Notebook (for experimentation)
-
-## EDA 
-### 1. Sales Distribution by befor and after Holiday
+## 🔍 EDA 
+### 1️⃣ Sales Distribution by befor and after Holiday
 ![Total Sales by Holiday Category](sales_distribution_holiday_befor.png)
-   #### Highest Sales:
+   #### 🎯 Highest Sales:
  - Regular Days dominate sales volume (expected baseline).
   - During State Holidays show a noticeable spike, suggesting higher customer turnout during official holidays.
-   #### School Holidays:
+   #### 🏫 School Holidays:
   - Sales are lower during school holidays compared to regular days, possibly due to family travel or reduced local demand.
-### 2. Monthly Sales Trends  
+### 2️⃣ Monthly Sales Trends  
 ![Total Sales by Month](./seasonal_treand.png) 
-  #### Peak Seasons:
+  #### 📅 Peak Seasons:
   - Highest sales occur in December (likely due to holiday shopping, year-end promotions).
   - Secondary peaks in May/June (possibly summer season demand) and October (pre-holiday buildup).
-### 3. Feature Correlations  
+### 3️⃣ Feature Correlations  
 ![Correlation Matrix](/salesvscustomercorrelation.png)  
   #### Sales ↔ Customers (0.89):
   - Near-perfect linear relationship—higher foot traffic directly drives sales.
-## Model Details
- ### Model Architecture
+## 🤖 Model Details
+ ### 🧠 Model Architecture
    1. Random Forest:
        - Used for baseline modeling with 100 estimators
        - Handles both numerical and categorical features
@@ -69,8 +68,8 @@ This project uses the Rossmann Store Sales dataset from Kaggle, which contains h
        - Sequence model with 50 hidden units
        - Processes time-series data with a 7-day lookback window
        - Includes dropout layers (p=0.2) for regularization
-   3. Model result and Evaluation 
-## Installation
+### 📊 Model Results and Evaluation 
+## 💾 Installation
 To set up the project locally, follow these steps:
 1. Clone the repository:
    ```bash
@@ -91,6 +90,7 @@ pip install -r requirements.txt
   uvicorn app:app --reload
   The API will be available at http://127.0.0.1:8000.
   ```
-License
+Feel free to reach out using the contact below:
+✉️ 
 This project is licensed under the MIT License. See the LICENSE file for details.
 
