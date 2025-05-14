@@ -69,6 +69,13 @@ This project uses the Rossmann Store Sales dataset from Kaggle, which contains h
        - Processes time-series data with a 7-day lookback window
        - Includes dropout layers (p=0.2) for regularization
 ### 📊 Model Results and Evaluation 
+## 🖼️ Flask App UI
+
+Here’s a preview of the Flask-based web interface:
+
+![Flask App UI](images/flask_app_ui.png)
+
+For more experience, you can refer to this site on Rossmann Sales Prediction.
 ## 💾 Installation
 To set up the project locally, follow these steps:
 1. Clone the repository:
@@ -79,18 +86,19 @@ To set up the project locally, follow these steps:
 ```bash
 pip install -r requirements.txt
    ```
-3. Usage
-  - Data Preparation:
-      Place your sales data in the designated directory. The script is designed to load and preprocess the data automatically.
-  - Model Training:
-      Run the Model_build.py script to preprocess the data and fit the model.
-  - Making Predictions: Use the TestSalesForecasting class to make predictions on new test data Ensure your test data follows the same preprocessing steps as the training data.
-4. Starting the API by running the FastAPI application:
-```bash
-  uvicorn app:app --reload
-  The API will be available at http://127.0.0.1:8000.
-  ```
-Feel free to reach out using the contact below:
-✉️ 
-This project is licensed under the MIT License. See the LICENSE file for details.
+## 🙋‍♀️ Contributing
 
+Contributions are welcome and appreciated!
+
+If you'd like to contribute, please follow these steps:
+
+1. 🍴 Fork the repository  
+2. 🛠️ Create a new branch (`git checkout -b feature/your-feature-name`)  
+3. ✍️ Make your changes  
+4. ✅ Commit your changes (`git commit -m 'Add your message'`)  
+5. 🚀 Push to the branch (`git push origin feature/your-feature-name`)  
+6. 🔁 Open a pull request
+
+⭐ If you found this project useful, feel free to give it a star on [GitHub](https://github.com/Marta233/Sales_Forcasting.git)!
+
+Thanks for visiting! 🚀
