@@ -68,12 +68,11 @@ This project uses the Rossmann Store Sales dataset from Kaggle, which contains h
        - Sequence model with 50 hidden units
        - Processes time-series data with a 7-day lookback window
        - Includes dropout layers (p=0.2) for regularization
-### 📊 Model Results and Evaluation 
 ## 🖼️ Flask App UI
 
 Here’s a preview of the Flask-based web interface:
 
-![Flask App UI](images/flask_app_ui.png)
+![Flask App UI](images/Flask_API.png)
 
 For more experience, you can refer to this site on Rossmann Sales Prediction.
 ## 💾 Installation
