@@ -1,9 +1,10 @@
 import pandas as pd
 import numpy as np
 import logging
+from keras.optimizers import Adam
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error, r2_score
+from sklearn.metrics import mean_absolute_error, r2_score, mean_squared_error
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -18,28 +19,33 @@ import datetime
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class ModelPrepro:
-    def __init__(self, data):
-        self.data = data
-
+    def __init__(self, df_train, df_store):
+        self.df_train = df_train
+        self.df_store = df_store
+    
+    def merge_store_data(self):
+        logging.info("Merging training df_train with store df_train...")
+        self.df_train = self.df_train.merge(self.df_store, on='Store', how='left')
+        logging.info("Merging completed. New training df_train shape: {}".format(self.df_train.shape))
+        return self.df_train
     def data_prepro(self):
         # Convert Date to datetime
-        self.data['Date'] = pd.to_datetime(self.data['Date'])
+        self.df_train['Date'] = pd.to_datetime(self.df_train['Date'])
         
-        # Log the shape of the data
-        logging.info(f'Starting data preprocessing for {self.data.shape[0]} rows and {self.data.shape[1]} columns.')
+        # Log the shape of the df_train
+        logging.info(f'Starting df_train preprocessing for {self.df_train.shape[0]} rows and {self.df_train.shape[1]} columns.')
         
         # Log the descriptive statistics
-        description = self.data.describe().T
-        logging.info('Descriptive statistics of the dataset:')
-        logging.info(description)
-
+        logging.info('Descriptive statistics of the df_trainset:')
+        description = self.df_train.describe().T.round(2)
+        return description
     def days_to_next_holiday(self):
-        holiday_dates = self.data[self.data['StateHoliday'] != '0']['Date'].sort_values().unique()
-        self.data['DaysToNextHoliday'] = self.data['Date'].apply(lambda x: self._calculate_days_to_next_holiday(x, holiday_dates))
+        holiday_dates = self.df_train[self.df_train['StateHoliday'] != '0']['Date'].sort_values().unique()
+        self.df_train['DaysToNextHoliday'] = self.df_train['Date'].apply(lambda x: self._calculate_days_to_next_holiday(x, holiday_dates))
 
     def days_after_last_holiday(self):
-        holiday_dates = self.data[self.data['StateHoliday'] != '0']['Date'].sort_values().unique()
-        self.data['DaysAfterLastHoliday'] = self.data['Date'].apply(lambda x: self._calculate_days_after_last_holiday(x, holiday_dates))
+        holiday_dates = self.df_train[self.df_train['StateHoliday'] != '0']['Date'].sort_values().unique()
+        self.df_train['DaysAfterLastHoliday'] = self.df_train['Date'].apply(lambda x: self._calculate_days_after_last_holiday(x, holiday_dates))
 
     def _calculate_days_to_next_holiday(self, current_date, holiday_dates):
         future_holidays = holiday_dates[holiday_dates > current_date]
@@ -49,221 +55,171 @@ class ModelPrepro:
         past_holidays = holiday_dates[holiday_dates < current_date]
         return (current_date - past_holidays[-1]).days if len(past_holidays) > 0 else np.nan
     def feature_engineering(self):
-        self.data['weekend'] = self.data['DayOfWeek'].apply(lambda x: 1 if x > 5 else 0)
-        self.data['weekdays'] = self.data['DayOfWeek'].apply(lambda x: 1 if x <= 5 else 0)
-        self.data['Quarter'] = self.data['Date'].dt.quarter
-        self.data['Month'] = self.data['Date'].dt.month
-        self.data['Seasons'] = self.data['Month'].apply(lambda x: 1 if 3 <= x <= 6 else 2 if 7 <= x <= 9 else 3 if 10 <= x <= 12 else 4)
-        self.data['Sales_lag_1'] = self.data['Sales'].shift(1)  # Sales on the previous day
-        self.data['Sales_lag_7'] = self.data['Sales'].shift(7)  # Sales 7 days ago
-
+        self.df_train['weekend'] = self.df_train['DayOfWeek'].apply(lambda x: 1 if x > 5 else 0)
+        self.df_train['weekdays'] = self.df_train['DayOfWeek'].apply(lambda x: 1 if x <= 5 else 0)
+        self.df_train['Quarter'] = self.df_train['Date'].dt.quarter
+        self.df_train['Month'] = self.df_train['Date'].dt.month
+        # self.df_train['Seasons'] = self.df_train['Month'].apply(lambda x: 1 if 3 <= x <= 6 else 2 if 7 <= x <= 9 else 3 if 10 <= x <= 12 else 4)
+        self.df_train['Sales_lag_1'] = self.df_train['Sales'].shift(1)  # Sales on the previous day
+        self.df_train['Sales_lag_7'] = self.df_train['Sales'].shift(7)  # Sales 7 days ago
+        return self.df_train
+    def missing_percentage(self):
+        # Calculate the percentage of missing values for each column
+        missing_percentage = self.df_train.isnull().mean() * 100
+        return missing_percentage
     def handel_missing(self):
         # Calculate the percentage of missing values for each column
-        missing_percentage = self.data.isnull().mean() * 100
-
-        # Identify columns with more than 32% missing values
+        missing_percentage = self.df_train.isnull().mean() * 100
         columns_to_remove = missing_percentage[missing_percentage > 31].index
-
-        # Remove those columns from the DataFrame
-        self.data.drop(columns=columns_to_remove, inplace=True)
-        # Optionally, print the remaining columns and their missing percentages
-        remaining_missing_percentage = self.data.isnull().mean() * 100
-        self.data['DaysToNextHoliday'].fillna(self.data['DaysToNextHoliday'].mean(), inplace=True)
-        self.data['DaysAfterLastHoliday'].fillna(self.data['DaysAfterLastHoliday'].mean(), inplace=True)
-        self.data['CompetitionDistance'].fillna(self.data['CompetitionDistance'].mean(), inplace=True)
-        mean_sales_lag_1 = self.data['Sales_lag_1'].mean()
-        mean_sales_lag_7 = self.data['Sales_lag_7'].mean()
-        self.data['Sales_lag_1'].fillna(mean_sales_lag_1, inplace=True)
-        self.data['Sales_lag_7'].fillna(mean_sales_lag_7, inplace=True)
-        # Transforming the 'IsStateHoliday' column
-        self.data['IsStateHoliday'] = self.data['StateHoliday'].apply(lambda x: 0 if x == 0 else 1)
-        self.data['StateHoliday'].dropna(inplace=True)
-        return remaining_missing_percentage
+        self.df_train.drop(columns=columns_to_remove, inplace=True)
+        self.df_train.drop(columns=['Date'], inplace=True)
+        self.df_train['DaysToNextHoliday'].fillna(self.df_train['DaysToNextHoliday'].mean(), inplace=True)
+        self.df_train['DaysAfterLastHoliday'].fillna(self.df_train['DaysAfterLastHoliday'].mean(), inplace=True)
+        self.df_train['CompetitionDistance'].fillna(self.df_train['CompetitionDistance'].mean(), inplace=True)
+        mean_sales_lag_1 = self.df_train['Sales_lag_1'].mean()
+        mean_sales_lag_7 = self.df_train['Sales_lag_7'].mean()
+        self.df_train['Sales_lag_1'].fillna(mean_sales_lag_1, inplace=True)
+        self.df_train['Sales_lag_7'].fillna(mean_sales_lag_7, inplace=True)
+        self.df_train['IsStateHoliday'] = self.df_train['StateHoliday'].apply(lambda x: 0 if x == 0 else 1)
+        # self.df_train['StateHoliday'].dropna(inplace=True)
+        self.df_train.drop(columns=['StateHoliday'], inplace=True)
+        object_cols = self.df_train.select_dtypes(include=['object']).columns.tolist()
+        # One-hot encode the object columns
+        self.df_train = pd.get_dummies(self.df_train, columns=object_cols, drop_first=True)
+        object_cols = self.df_train.select_dtypes(include=['bool']).columns.tolist()
+        self.df_train[object_cols] = self.df_train[object_cols].astype(int)
+        return self.df_train
     def salse_othe_futur_corr(self):
-        # Ensure the data has been encoded
-        if not self.encoded:
-            raise ValueError("Data must be encoded before performing other operations.")
-        
-        # Calculate the correlation matrix
-        correlation_matrix = self.data.corr()
-
-        # Display the correlation matrix as a table
-        print("Correlation Matrix:")
-        print(correlation_matrix)
-
-        # Visualize the correlation matrix as a heatmap
-        plt.figure(figsize=(16, 12))
-        sns.heatmap(correlation_matrix, annot=True, fmt=".2f", cmap="coolwarm", cbar=True)
-        plt.title("Correlation Matrix Heatmap")
-        plt.show()
-    def encode_categorical_features(self):
-        categorical_cols = ['Assortment', 'StoreType']
-        
-        for col in categorical_cols:
-            if col in self.data.columns:
-                # Convert to string and fill missing values
-                self.data[col] = self.data[col].astype(str).fillna('missing')
-        
-        # One-hot encoding for specified columns
-        self.data = pd.get_dummies(self.data, columns=categorical_cols, drop_first=True)
-        self.encoded = True
-        logging.info("One-hot encoding completed. Encoded columns: {}".format(self.data.columns.tolist()))
-    def scale_data(self):
-        self.data.drop(columns=['Date'], inplace=True)
-        features_to_scale = ['CompetitionDistance','Customers', 'Sales_lag_1',	'Sales_lag_7','DaysToNextHoliday', 'DaysAfterLastHoliday']
-        scaler = StandardScaler()
-        self.data[features_to_scale] = scaler.fit_transform(self.data[features_to_scale])
-        logging.info('Data scaling complete.')
-    # Calculate correlation matrix
-   
-    
-    def future_selection_corr(self):
-        # Convert boolean columns to integers
-        bool_cols = self.data.select_dtypes(include=['bool']).columns
-        for col in bool_cols:
-            self.data[col] = self.data[col].astype(int)
-
-        # Select only numeric columns for correlation
-        numeric_data = self.data.select_dtypes(include=['number'])
-
-        # Calculate the correlation matrix
-        correlation_matrix = numeric_data.corr()
-
-        # Display the correlation matrix as a table
-        print("Correlation Matrix:")
-        print(correlation_matrix)
-
-        # Visualize the correlation matrix as a heatmap
+        correlation_matrix = self.df_train.corr()
         plt.figure(figsize=(16, 12))
         sns.heatmap(correlation_matrix, annot=True, fmt=".2f", cmap="coolwarm", cbar=True)
         plt.title("Correlation Matrix Heatmap")
         plt.show()
 class SalesForecasting:
-    def __init__(self, file_path):
-        self.file_path = file_path
-        self.data = None
+    def __init__(self, file_path1,file_path2):
+        self.file_path1 = file_path1
+        self.file_path2 = file_path2
+        self.df_train = None
+        self.df_store  = None
         self.preprocessed_data = None
         self.model_rf = None
-
+        self.model_lstm = None
+        self.scaler = None
+        self.X = None
+        self.y = None
     def load_data(self):
-        """Loads data from a CSV file and stores it in the class instance."""
+        """Loads df_train from a CSV file and stores it in the class instance."""
         try:
-            self.data = pd.read_csv(self.file_path)
-            logging.info(f'Data loaded with shape: {self.data.shape}')
+            self.df_train = pd.read_csv(self.file_path1)
+            self.df_store = pd.read_csv(self.file_path2)
+            logging.info(f'df_train loaded with shape: {self.df_train.shape}')
         except FileNotFoundError as e:
-            logging.error(f"File not found: {self.file_path}")
+            logging.error(f"File not found: {self.file_path1}")
             raise e
         except Exception as e:
-            logging.error(f"An error occurred while loading data: {e}")
+            logging.error(f"An error occurred while loading df_train: {e}")
             raise e
 
     def preprocess_data(self):
-        """Applies preprocessing steps to the data including feature engineering and scaling."""
-        if self.data is None:
-            logging.error("Data not loaded. Please run load_data() first.")
-            return
-
-        # Assuming 'ModelPrepro' is a separate class responsible for preprocessing
-        preprocessor = ModelPrepro(self.data)
+        """Applies preprocessing steps to the df_train including feature engineering and scaling."""
+        preprocessor = ModelPrepro(self.df_train, self.df_store)
+        preprocessor.merge_store_data()
         preprocessor.data_prepro()
         preprocessor.days_to_next_holiday()
         preprocessor.days_after_last_holiday()
         preprocessor.feature_engineering()
-        preprocessor.handel_missing()
-        preprocessor.encode_categorical_features()  # Ensure this is called before dropping columns
-        preprocessor.scale_data()
-
-        self.preprocessed_data = preprocessor.data
-
-        # Optionally drop the Date column if still present
-        if 'Date' in self.preprocessed_data.columns:
-            self.preprocessed_data.drop(columns=['Date'], inplace=True)
-
-        # Ensure only numeric columns remain after encoding
-        self.preprocessed_data = self.preprocessed_data.select_dtypes(include=[np.number])
-        self.preprocessed_data.drop(columns=['Unnamed: 0'], inplace=True, errors='ignore')
-        logging.info(f'Preprocessed data shape: {self.preprocessed_data.shape}')
+        df = preprocessor.handel_missing()
+        self.preprocessed_data = df
+        logging.info(f'Preprocessed df_train shape: {self.preprocessed_data.shape}')
         logging.info(f'Available columns after preprocessing: {self.preprocessed_data.columns.tolist()}')
-        return self.preprocessed_data
 
+    def evaluate_model(self,x,y,model):
+        y_pred = model.predict(x)
+        r2 = r2_score(y_pred,y)
+        MAE = mean_absolute_error(y_pred,y)
+        MSE = mean_squared_error(y_pred,y)
+        print('R^2 Score:', r2)
+        print('Mean Absolute Error (MAE):', MAE)
+        print('Mean Squared Error (MSE):', MSE)
     def fit_random_forest_model(self):
-        """Fits a Random Forest model using the preprocessed data."""
-        if self.preprocessed_data is None:
-            logging.error("Data not preprocessed. Please run preprocess_data() first.")
-            return
-
-
-      
+        # Split the data
         X = self.preprocessed_data.drop(columns=['Sales'])
         y = self.preprocessed_data['Sales']
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        # Create a pipeline
-        self.model_rf = Pipeline(steps=[
-            ('scaler', StandardScaler()),  # Scaling step
-            ('model_rf', RandomForestRegressor(n_estimators=50, random_state=42, n_jobs=-1))  # Model
+        # Define pipeline
+        pipeline = Pipeline([
+            ('scaler', StandardScaler()),
+            ('rf', RandomForestRegressor(random_state=42))
         ])
 
-        # Fit the model
-        self.model_rf.fit(X, y)
+        # Fit pipeline
+        pipeline.fit(X_train, y_train)
         logging.info('Random Forest model fitting complete.')
 
+        # Save the model
+        self.model_rf = pipeline
+        joblib.dump(self.model_rf, 'random_forest_model.pkl')
+
+        # Save feature names
+        feature_names = X.columns.tolist()
+        with open('feature_names.pkl', 'wb') as f:
+            joblib.dump(feature_names, f)
+
         # Feature importance
-        feature_importances = self.model_rf.named_steps['model_rf'].feature_importances_
-        feature_names = X.columns
+        feature_importances = self.model_rf.named_steps['rf'].feature_importances_
         importance_df = pd.DataFrame({'Feature': feature_names, 'Importance': feature_importances}).sort_values(by='Importance', ascending=False)
 
+        # Plot the feature importance
         plt.figure(figsize=(12, 6))
         sns.barplot(x='Importance', y='Feature', data=importance_df)
         plt.title("Random Forest Feature Importances")
         plt.show()
+        self.evaluate_model(X_test,  y_test, self.model_rf)
+    from sklearn.preprocessing import StandardScaler
 
-    def evaluate_model(self):
-        if self.preprocessed_data is None:
-            logging.error("Data not preprocessed. Please run preprocess_data() first.")
-            return
+    def fit_lstm_model_simple(self, n_steps=10):
+        print("Scaling and training LSTM model...")
 
-       
-      
-        X_rf = self.preprocessed_data.drop(columns=['Sales'] )
-        y_rf = self.preprocessed_data['Sales']
+        # 1. Scale the whole preprocessed_data (including 'Sales')
+        self.scaler_all = StandardScaler()
+        scaled_data = self.scaler_all.fit_transform(self.preprocessed_data)
+        scaled_df = pd.DataFrame(scaled_data, columns=self.preprocessed_data.columns)
 
-        X_train_rf, X_test_rf, y_train_rf, y_test_rf = train_test_split(X_rf, y_rf, test_size=0.2, random_state=42)
+        # 2. Now split features and target
+        X = scaled_df.drop(columns=['Sales'])
+        y = scaled_df[['Sales']]  # Keep y as DataFrame
 
-        rf_predictions = self.model_rf.predict(X_test_rf)
+        # 3. Create sequences
+        X_seq, y_seq = [], []
+        for i in range(n_steps, len(X)):
+            X_seq.append(X.iloc[i - n_steps:i].values)
+            y_seq.append(y.iloc[i].values)
+        X_seq = np.array(X_seq)
+        y_seq = np.array(y_seq)
 
-        rf_mae = mean_absolute_error(y_test_rf, rf_predictions)
-        rf_r2 = r2_score(y_test_rf, rf_predictions)
+        # 4. Train-test split
+        X_train, X_test, y_train, y_test = train_test_split(X_seq, y_seq, test_size=0.2, random_state=42)
 
-        lower_bound, upper_bound = self.estimate_confidence_intervals(X_test_rf)
+        # 5. Build and compile model
+        model = Sequential()
+        model.add(LSTM(50, activation='relu', input_shape=(n_steps, X_train.shape[2])))
+        model.add(Dense(1))
+        model.compile(optimizer='adam', loss='mse')
 
-        logging.info(f'Random Forest - MAE: {rf_mae}, R^2: {rf_r2}')
-        logging.info(f'Confidence Interval: [{lower_bound}, {upper_bound}]')
+        # 6. Train the model
+        history = model.fit(X_train, y_train, epochs=10, batch_size=32, validation_data=(X_test, y_test))
 
-    def estimate_confidence_intervals(self, X_test, n_iterations=1000, alpha=0.05):
-        """Estimate confidence intervals for predictions using bootstrap sampling."""
-        predictions = []
+        # 7. Save model and scaler
+        model.save('lstm_model.h5')
+        self.model_lstm = model
+        self.evaluate_model(X_test, y_test, model)
 
-        for _ in range(n_iterations):
-            X_bootstrap, _, y_bootstrap, _ = train_test_split(self.preprocessed_data.drop(columns=['Sales']),
-                                                            self.preprocessed_data['Sales'],
-                                                            test_size=0.2, random_state=np.random.randint(0, 10000))
-            model_rf_bootstrap = RandomForestRegressor(n_estimators=50, random_state=42)
-            model_rf_bootstrap.fit(X_bootstrap, y_bootstrap)
-            pred = model_rf_bootstrap.predict(X_test)
-            predictions.append(pred)
+        # 8. Plot training loss
+        plt.plot(history.history['loss'], label='Training loss')
+        plt.plot(history.history['val_loss'], label='Validation loss')
+        plt.legend()
+        plt.title("LSTM Training Loss")
+        plt.show()
 
-        predictions = np.array(predictions)
-        lower_bound = np.percentile(predictions, 100 * alpha / 2, axis=0)
-        upper_bound = np.percentile(predictions, 100 * (1 - alpha / 2), axis=0)
-
-        return lower_bound, upper_bound
-
-    def save_random_forest_model(self):
-        if self.model_rf is None:
-            logging.error('Model not trained. Please fit the model first.')
-            return
-        
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        file_name = f'random_forest_model_{timestamp}.pkl'
-        joblib.dump(self.model_rf, file_name)
-        logging.info(f'Random Forest model saved as {file_name}')
+        print("LSTM training done!")
