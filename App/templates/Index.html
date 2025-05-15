@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Forecasting Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --accent: #4895ef;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #4cc9f0;
+            --warning: #f72585;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            color: var(--primary);
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: #6c757d;
+            font-weight: 300;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--dark);
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+        
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        
+        button:hover {
+            background-color: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+        }
+        
+        .result-container {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background-color: var(--light);
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .result-title {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: var(--dark);
+        }
+        
+        .prediction {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .error {
+            color: var(--warning);
+            padding: 1rem;
+            background-color: rgba(247, 37, 133, 0.1);
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        
+        .section-title {
+            grid-column: 1 / -1;
+            font-size: 1.25rem;
+            color: var(--primary);
+            margin: 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent);
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+                margin: 1rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Sales Forecasting</h1>
+            <p class="subtitle">Predict future sales based on historical data and store characteristics</p>
+        </header>
+        
+        <form id="forecastForm">
+            <div class="form-grid">
+                <h3 class="section-title">Basic Information</h3>
+                
+                <div class="form-group">
+                    <label for="Date">Date</label>
+                    <input type="date" id="Date" name="Date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="Store">Store Number</label>
+                    <input type="number" id="Store" name="Store" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="Customers">Number of Customers</label>
+                    <input type="number" step="1" id="Customers" name="Customers" required>
+                </div>
+                
+                <h3 class="section-title">Store Characteristics</h3>
+                
+                <div class="form-group">
+                    <label for="StoreType">Store Type</label>
+                    <select id="StoreType" name="StoreType" required>
+                        <option value="a">A - Standard</option>
+                        <option value="b">B - Extra</option>
+                        <option value="c">C - Large</option>
+                        <option value="d">D - Special</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="Assortment">Assortment Type</label>
+                    <select id="Assortment" name="Assortment" required>
+                        <option value="a">A - Basic</option>
+                        <option value="b">B - Extra</option>
+                        <option value="c">C - Extended</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="CompetitionDistance">Competitor Distance (meters)</label>
+                    <input type="number" step="1" id="CompetitionDistance" name="CompetitionDistance" required>
+                </div>
+                
+                <h3 class="section-title">Sales History</h3>
+                
+                <div class="form-group">
+                    <label for="Sales_lag_1">Previous Day Sales ($)</label>
+                    <input type="number" step="0.01" id="Sales_lag_1" name="Sales_lag_1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="Sales_lag_7">Sales 7 Days Ago ($)</label>
+                    <input type="number" step="0.01" id="Sales_lag_7" name="Sales_lag_7" required>
+                </div>
+                
+                <h3 class="section-title">Store Status</h3>
+                
+                <div class="form-group">
+                    <label for="Open">Is Store Open?</label>
+                    <select id="Open" name="Open" required>
+                        <option value="1">Yes</option>
+                        <option value="0">No</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="Promo">Is Promotion Active?</label>
+                    <select id="Promo" name="Promo" required>
+                        <option value="0">No</option>
+                        <option value="1">Yes</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="Promo2">Is Promo2 Active?</label>
+                    <select id="Promo2" name="Promo2" required>
+                        <option value="0">No</option>
+                        <option value="1">Yes</option>
+                    </select>
+                </div>
+                
+                <h3 class="section-title">Holiday Information</h3>
+                
+                <div class="form-group">
+                    <label for="IsStateHoliday">Is State Holiday?</label>
+                    <select id="IsStateHoliday" name="IsStateHoliday" required>
+                        <option value="0">No</option>
+                        <option value="1">Yes</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="SchoolHoliday">Is School Holiday?</label>
+                    <select id="SchoolHoliday" name="SchoolHoliday" required>
+                        <option value="0">No</option>
+                        <option value="1">Yes</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="DaysToNextHoliday">Days To Next Holiday</label>
+                    <input type="number" step="1" id="DaysToNextHoliday" name="DaysToNextHoliday" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="DaysAfterLastHoliday">Days After Last Holiday</label>
+                    <input type="number" step="1" id="DaysAfterLastHoliday" name="DaysAfterLastHoliday" required>
+                </div>
+            </div>
+            
+            <button type="submit" id="submitBtn">Predict Sales</button>
+        </form>
+        
+        <div class="result-container" id="resultContainer">
+            <h3 class="result-title">Prediction Result</h3>
+            <div class="prediction" id="predictionResult">Calculating...</div>
+            <div class="error" id="errorMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('forecastForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const form = e.target;
+            const submitBtn = document.getElementById('submitBtn');
+            const resultContainer = document.getElementById('resultContainer');
+            const predictionResult = document.getElementById('predictionResult');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+            resultContainer.style.display = 'block';
+            predictionResult.textContent = 'Calculating...';
+            errorMessage.textContent = '';
+            
+            // Convert form data to object
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Convert numeric fields
+            const numericFields = ['Store', 'Customers', 'Open', 'Promo', 'SchoolHoliday',
+                                  'CompetitionDistance', 'Promo2', 'Sales_lag_1', 'Sales_lag_7',
+                                  'DaysToNextHoliday', 'DaysAfterLastHoliday'];
+            
+            numericFields.forEach(field => {
+                if (data[field]) {
+                    data[field] = parseFloat(data[field]);
+                }
+            });
+            
+            // Send AJAX request
+            fetch('/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Request failed');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    predictionResult.textContent = data.prediction;
+                } else {
+                    throw new Error(data.error || 'Prediction failed');
+                }
+            })
+            .catch(error => {
+                errorMessage.textContent = error.message;
+                predictionResult.textContent = '';
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Predict Sales';
+            });
+        });
+    </script>
+</body>
+</html>
