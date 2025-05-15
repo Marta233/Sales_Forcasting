@@ -12,7 +12,7 @@
 - [Contributing](#contributing)
 - [License](#license)
 ## 💡 Project Overview
-This project implements a sales forecasting solution using machine learning techniques, specifically a Random Forest model. Initially, an LSTM (Long Short-Term Memory) model was explored, but it did not yield satisfactory results, prompting a shift to the more robust Random Forest algorithm. This project also includes the development of a FLASKAPI for serving predictions.
+This project implements a sales forecasting solution using machine learning techniques, specifically a Random Forest model and LSTM (Long Short-Term Memory). This project also includes the development of a FLASKAPI for serving predictions.
 The goal of this project is to accurately predict future sales based on historical data. The Random Forest model was chosen for its performance and interpretability. This solution includes data preprocessing, feature engineering, and model evaluation steps, and it serves as a foundation for further improvements and refinements.
 ## 🗂️  Data Source 
 This project uses the Rossmann Store Sales dataset from Kaggle, which contains historical sales data for Rossmann drug stores across Europe.
